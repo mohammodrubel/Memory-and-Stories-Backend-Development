@@ -47,7 +47,7 @@ const imageFilter = (_req, file, cb) => {
 exports.imageUpload = (0, multer_1.default)({
     storage,
     fileFilter: imageFilter,
-    limits: { fileSize: 5 * 1024 * 1024 },
+    limits: { fileSize: 10 * 1024 * 1024 },
 });
 const buildPublicUrl = (req, filename) => {
     const host = req.get('host');
