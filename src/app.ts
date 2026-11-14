@@ -23,7 +23,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
-const corsOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000')
+const corsOrigins = (process.env.CORS_ORIGINS || 'https://memoryandstories.com,http://localhost:3000')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
