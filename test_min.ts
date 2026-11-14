@@ -1,0 +1,11 @@
+import PDFDocument from 'pdfkit';
+import fs from 'fs';
+const doc = new PDFDocument({ size: 'A4', margin: 0 });
+doc.pipe(fs.createWriteStream('/tmp/test_min.pdf'));
+doc.font('Helvetica-Bold').fontSize(20).fillColor('#000000').text('HELLO TEST', 50, 50);
+doc.fontSize(12).text('line two', 50, 80);
+doc.rect(50, 100, 200, 30).fill('#1a1a1a');
+doc.fillColor('#ffffff').text('white on black', 60, 110);
+doc.fillColor('#000000').fontSize(14).text('after rect', 50, 150);
+doc.end();
+console.log('done');

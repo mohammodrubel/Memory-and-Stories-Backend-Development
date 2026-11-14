@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.OrderRoutes = void 0;
+const express_1 = __importDefault(require("express"));
+const client_1 = require("@prisma/client");
+const auth_1 = __importDefault(require("../../middlewares/auth"));
+const validateRequest_1 = __importDefault(require("../../middlewares/validateRequest"));
+const order_controller_1 = require("./order.controller");
+const order_validation_1 = require("./order.validation");
+const router = express_1.default.Router();
+router.post('/create-order', (0, auth_1.default)(client_1.Role.USER, client_1.Role.ADMIN, client_1.Role.MANAGER), (0, validateRequest_1.default)(order_validation_1.OrderValidation.createOrderSchema), order_controller_1.OrderController.createOrder);
+router.get('/me', (0, auth_1.default)(client_1.Role.USER, client_1.Role.ADMIN, client_1.Role.MANAGER), order_controller_1.OrderController.getMyOrders);
+router.get('/', (0, auth_1.default)(client_1.Role.ADMIN, client_1.Role.MANAGER), order_controller_1.OrderController.getAllOrders);
+router.get('/:id', (0, auth_1.default)(client_1.Role.USER, client_1.Role.ADMIN, client_1.Role.MANAGER), order_controller_1.OrderController.getSingleOrder);
+router.patch('/:id', (0, auth_1.default)(client_1.Role.ADMIN, client_1.Role.MANAGER), (0, validateRequest_1.default)(order_validation_1.OrderValidation.updateOrderSchema), order_controller_1.OrderController.updateOrder);
+router.delete('/:id', (0, auth_1.default)(client_1.Role.ADMIN, client_1.Role.MANAGER), order_controller_1.OrderController.deleteOrder);
+exports.OrderRoutes = router;

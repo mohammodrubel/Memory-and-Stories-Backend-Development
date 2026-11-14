@@ -1,0 +1,6 @@
+
+[2m$ vitest run[22m
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90m/home/niloy-roy/Desktop/P/minhaj_shishir/apps/api[39m
+

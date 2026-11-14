@@ -1,0 +1,11 @@
+import PDFDocument from 'pdfkit';
+import fs from 'fs';
+const doc = new PDFDocument({ size: 'A4', margin: 0 });
+doc.pipe(fs.createWriteStream('/tmp/test_min2.pdf'));
+doc.font('Helvetica-Bold').fontSize(20).fillColor('#000000').text('NORMAL', 50, 50);
+doc.fontSize(12).text('with spacing', 50, 80, { characterSpacing: 2 });
+doc.text('AFTER spacing', 50, 110);
+doc.fontSize(14).fillColor('#c47a2c').text('orange text', 50, 140, { width: 300, align: 'right' });
+doc.fillColor('#000000').text('back to black', 50, 170);
+doc.end();
+console.log('done');

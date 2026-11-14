@@ -1,0 +1,10 @@
+$ eslint src/**/*.ts
+
+/home/niloy-roy/Desktop/P/minhaj_shishir/apps/api/src/app/middlewares/globalErrorHandler.ts
+  1:1  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  2:1  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-unused-vars')
+  3:1  warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+
+✖ 3 problems (0 errors, 3 warnings)
+  0 errors and 3 warnings potentially fixable with the `--fix` option.
+

@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DiscountRoutes = void 0;
+const express_1 = __importDefault(require("express"));
+const client_1 = require("@prisma/client");
+const auth_1 = __importDefault(require("../../middlewares/auth"));
+const validateRequest_1 = __importDefault(require("../../middlewares/validateRequest"));
+const discount_controller_1 = require("./discount.controller");
+const discount_validation_1 = require("./discount.validation");
+const router = express_1.default.Router();
+router.post('/', (0, auth_1.default)(client_1.Role.ADMIN, client_1.Role.MANAGER), (0, validateRequest_1.default)(discount_validation_1.DiscountValidation.createDiscountSchema), discount_controller_1.DiscountController.create);
+router.get('/', (0, auth_1.default)(client_1.Role.ADMIN, client_1.Role.MANAGER), discount_controller_1.DiscountController.list);
+router.post('/validate-coupon', (0, validateRequest_1.default)(discount_validation_1.DiscountValidation.validateCouponSchema), discount_controller_1.DiscountController.validateCoupon);
+router.get('/:id', (0, auth_1.default)(client_1.Role.ADMIN, client_1.Role.MANAGER), discount_controller_1.DiscountController.detail);
+router.patch('/:id', (0, auth_1.default)(client_1.Role.ADMIN, client_1.Role.MANAGER), (0, validateRequest_1.default)(discount_validation_1.DiscountValidation.updateDiscountSchema), discount_controller_1.DiscountController.update);
+router.delete('/:id', (0, auth_1.default)(client_1.Role.ADMIN, client_1.Role.MANAGER), discount_controller_1.DiscountController.softDelete);
+exports.DiscountRoutes = router;

@@ -1,0 +1,638 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  password      String
+  phone         String?
+  whatsapp      Boolean        @default(false)
+  role          Role           @default(USER)
+  createdAt     DateTime       @default(now())
+  bookings      Booking[]
+  orders        Order[]
+  payments      Payment[]
+  invoices      Invoice[]
+  notifications Notification[]
+  printRequests PrintRequest[]
+}
+
+model DeliveryFile {
+  id               String   @id @default(uuid())
+  bookingId        String
+  booking          Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  fileId           String
+  fileName         String
+  mimeType         String
+  size             String?
+  isFolder         Boolean  @default(false)
+  parentFolderId   String?
+  parentFolderName String?
+  capturedAt       DateTime @default(now())
+
+  @@unique([bookingId, fileId])
+  @@index([bookingId, parentFolderId])
+}
+
+model PrintRequest {
+  id               String           @id @default(uuid())
+  bookingId        String
+  booking          Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status           PrintStatus      @default(DRAFT)
+  maxPhotos        Int
+  adminNote        String?
+  rejectionReason  String?
+  submittedAt      DateTime?
+  approvedAt       DateTime?
+  printingAt       DateTime?
+  printDeliveredAt DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  selections       PrintSelection[]
+
+  @@index([userId, status])
+  @@index([bookingId])
+  @@index([status, updatedAt])
+}
+
+model PrintSelection {
+  id               String       @id @default(uuid())
+  printRequestId   String
+  printRequest     PrintRequest @relation(fields: [printRequestId], references: [id], onDelete: Cascade)
+  fileId           String
+  fileName         String
+  parentFolderId   String?
+  parentFolderName String?
+  createdAt        DateTime     @default(now())
+
+  @@unique([printRequestId, fileId])
+}
+
+enum PrintStatus {
+  DRAFT
+  SUBMITTED
+  CHANGES_REQUESTED
+  APPROVED
+  PRINTING
+  DELIVERED
+  REJECTED
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String?
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+}
+
+model Banner {
+  id          String   @id @default(uuid())
+  short_title String
+  title       String
+  description String?
+  image       String?
+  project     Int
+  award       Int
+  experience  Int
+  youtube     String?
+  video       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Service2 {
+  id          String @id @default(uuid())
+  title       String
+  description String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("ServiceForClient")
+}
+
+model Service {
+  id            String            @id @default(uuid())
+  title         String
+  description   String?
+  amount        Float
+  archived      Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  bookings      Booking[]
+  days          Day[]
+  discountLinks DiscountService[]
+}
+
+model Day {
+  id        String  @id @default(uuid())
+  dayName   String
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  events    Event[]
+}
+
+model Event {
+  id               String    @id @default(uuid())
+  eventName        String
+  photographers    Int
+  cinematographers Int
+  dayId            String
+  day              Day       @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  features         Feature[]
+}
+
+model Feature {
+  id      String @id @default(uuid())
+  name    String
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Package {
+  id          String   @id @default(uuid())
+  name        String
+  price       Float
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+model ContractTemplate {
+  id        String   @id @default(uuid())
+  title     String   @default("Service Agreement")
+  intro     String?  @db.Text
+  clauses   Json
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+model BookingContract {
+  id               String   @id @default(uuid())
+  bookingId        String   @unique
+  booking          Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  signatoryName    String
+  signatureDataUrl String   @db.Text
+  // Frozen snapshot of template at sign time
+  snapshotTitle    String
+  snapshotIntro    String?  @db.Text
+  snapshotClauses  Json
+  signedAt         DateTime @default(now())
+  signedIp         String?
+}
+
+model EventType {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  icon          String?
+  sortOrder     Int            @default(0)
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  bookingEvents BookingEvent[]
+}
+
+model BookingEvent {
+  id           String    @id @default(uuid())
+  bookingId    String
+  booking      Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  packageDayId String?
+  eventTypeId  String
+  eventType    EventType @relation(fields: [eventTypeId], references: [id])
+  date         DateTime
+  venue        String?
+  notes        String?
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  @@index([bookingId])
+}
+
+model Booking {
+  id                 String              @id @default(uuid())
+  userId             String
+  serviceId          String
+  date               DateTime
+  status             BookingStatus       @default(PENDING)
+  totalAmount        Float               @default(0)
+  subtotal           Float               @default(0)
+  discountAmount     Float               @default(0)
+  customerName       String?
+  customerEmail      String?
+  customerPhone      String?
+  notes              String?
+  deliveryFolderId   String?
+  deliveryFolderName String?
+  deliveredAt        DateTime?
+  printLimit         Int?
+  gcalEventId        String?
+  gcalAddedAt        DateTime?
+  printRequests      PrintRequest[]
+  deliveryFiles      DeliveryFile[]
+  createdAt          DateTime            @default(now())
+  service            Service             @relation(fields: [serviceId], references: [id])
+  user               User                @relation(fields: [userId], references: [id])
+  payment            Payment?
+  assignments        BookingAssignment[]
+  bookingExpenses    BookingExpense[]
+  events             BookingEvent[]
+  contract           BookingContract?
+  bookingDiscount    BookingDiscount?
+}
+
+model Discount {
+  id                String            @id @default(uuid())
+  name              String
+  code              String?           @unique
+  kind              DiscountKind
+  type              DiscountType
+  value             Float
+  validFrom         DateTime
+  validTo           DateTime
+  usageCap          Int?
+  usageCount        Int               @default(0)
+  perCustomerLimit  Int?
+  minBookingAmount  Float?
+  maxDiscountAmount Float?
+  active            Boolean           @default(true)
+  createdById       String
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  services          DiscountService[]
+  redemptions       BookingDiscount[]
+
+  @@index([kind, active, validFrom, validTo])
+}
+
+model DiscountService {
+  discountId String
+  serviceId  String
+  discount   Discount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  service    Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([discountId, serviceId])
+  @@index([serviceId])
+}
+
+model BookingDiscount {
+  id          String         @id @default(uuid())
+  bookingId   String         @unique
+  discountId  String?
+  source      DiscountSource
+  type        DiscountType
+  value       Float
+  amount      Float
+  reason      String?
+  appliedById String
+  appliedAt   DateTime       @default(now())
+  booking     Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  discount    Discount?      @relation(fields: [discountId], references: [id], onDelete: SetNull)
+
+  @@index([discountId])
+}
+
+model Photographer {
+  id          String              @id @default(uuid())
+  name        String
+  phone       String
+  email       String?
+  notes       String?
+  archived    Boolean             @default(false)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  assignments BookingAssignment[]
+}
+
+model BookingAssignment {
+  id             String       @id @default(uuid())
+  bookingId      String
+  photographerId String
+  fee            Float        @default(0)
+  createdAt      DateTime     @default(now())
+  booking        Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  photographer   Photographer @relation(fields: [photographerId], references: [id], onDelete: Restrict)
+
+  @@unique([bookingId, photographerId])
+  @@index([bookingId])
+}
+
+model BookingExpense {
+  id        String   @id @default(uuid())
+  bookingId String
+  label     String
+  amount    Float
+  createdAt DateTime @default(now())
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+}
+
+model Staff {
+  id            String             @id @default(uuid())
+  name          String
+  role          String
+  monthlySalary Float              @default(0)
+  phone         String?
+  status        String             @default("active")
+  notes         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  expenses      Expense[]
+  recurring     RecurringExpense[]
+}
+
+model FinanceCategory {
+  id        String             @id @default(uuid())
+  name      String
+  type      String
+  color     String?
+  archived  Boolean            @default(false)
+  createdAt DateTime           @default(now())
+  expenses  Expense[]
+  incomes   Income[]
+  recurring RecurringExpense[]
+
+  @@unique([name, type])
+}
+
+model RecurringExpense {
+  id            String          @id @default(uuid())
+  label         String
+  categoryId    String
+  defaultAmount Float           @default(0)
+  staffId       String?
+  active        Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  category      FinanceCategory @relation(fields: [categoryId], references: [id])
+  staff         Staff?          @relation(fields: [staffId], references: [id])
+  expenses      Expense[]
+}
+
+model Expense {
+  id                 String            @id @default(uuid())
+  date               DateTime
+  categoryId         String
+  amount             Float
+  note               String?
+  staffId            String?
+  recurringExpenseId String?
+  createdAt          DateTime          @default(now())
+  category           FinanceCategory   @relation(fields: [categoryId], references: [id])
+  staff              Staff?            @relation(fields: [staffId], references: [id])
+  recurring          RecurringExpense? @relation(fields: [recurringExpenseId], references: [id])
+
+  @@index([date])
+  @@index([categoryId])
+}
+
+model Income {
+  id         String          @id @default(uuid())
+  date       DateTime
+  categoryId String
+  amount     Float
+  note       String?
+  bookingId  String?
+  createdAt  DateTime        @default(now())
+  category   FinanceCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([date])
+  @@index([categoryId])
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  price       Float
+  image       String
+  description String?
+  archived    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id        String      @id @default(uuid())
+  userId    String
+  total     Float
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id])
+  items     OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Category {
+  id         String      @id @default(uuid())
+  name       String      @unique
+  createdAt  DateTime    @default(now())
+  portfolios Portfolio[]
+}
+
+model Portfolio {
+  id          String    @id @default(uuid())
+  title       String?
+  description String?
+  image       String
+  categoryId  String? // legacy single category; superseded by `categories`
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  category    Category? @relation(fields: [categoryId], references: [id])
+  categories  PortfolioCategoryLink[]
+
+  @@index([sortOrder, createdAt, id])
+}
+
+model PortfolioCategory {
+  id         String   @id @default(uuid())
+  name       String   @unique
+  createdAt  DateTime @default(now())
+  portfolios PortfolioCategoryLink[]
+}
+
+model PortfolioCategoryLink {
+  portfolioId String
+  categoryId  String
+  portfolio   Portfolio         @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  category    PortfolioCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([portfolioId, categoryId])
+  @@index([categoryId])
+}
+
+model Overview {
+  id          String   @id @default(uuid())
+  totalUsers  Int      @default(0)
+  totalOrders Int      @default(0)
+  totalSales  Float    @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+enum DiscountKind {
+  AUTO_SALE
+  COUPON
+}
+
+enum DiscountType {
+  FLAT
+  PERCENT
+}
+
+enum DiscountSource {
+  AUTO_SALE
+  COUPON
+  AD_HOC
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  USER
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  DELIVERED
+}
+
+model GoogleDriveAccount {
+  id           String   @id @default(uuid())
+  email        String
+  accessToken  String
+  refreshToken String
+  scope        String?
+  tokenType    String?
+  expiryDate   BigInt?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+model PaymentMethod {
+  id            String            @id @default(uuid())
+  name          String
+  type          PaymentMethodType @default(MOBILE_WALLET)
+  accountNumber String
+  accountHolder String?
+  instructions  String?
+  active        Boolean           @default(true)
+  sortOrder     Int               @default(0)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  payments      Payment[]
+}
+
+enum PaymentMethodType {
+  MOBILE_WALLET
+  BANK
+  OTHER
+}
+
+model Payment {
+  id              String         @id @default(uuid())
+  bookingId       String         @unique
+  booking         Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User           @relation(fields: [userId], references: [id])
+  paymentMethodId String?
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  totalAmount     Float
+  paidAmount      Float          @default(0)
+  refundDueAmount Float          @default(0)
+  status          PaymentStatus  @default(AWAITING_PAYMENT)
+  screenshotPath  String?
+  transactionRef  String?
+  adminNote       String?
+  approvedAt      DateTime?
+  approvedById    String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  invoices        Invoice[]
+}
+
+enum PaymentStatus {
+  AWAITING_PAYMENT
+  SCREENSHOT_SUBMITTED
+  PARTIALLY_PAID
+  PAID
+  REJECTED
+}
+
+model Invoice {
+  id          String   @id @default(uuid())
+  invoiceNo   String   @unique
+  paymentId   String
+  payment     Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  totalAmount Float
+  amountPaid  Float
+  amountDue   Float
+  isPartial   Boolean  @default(false)
+  pdfPath     String?
+  createdAt   DateTime @default(now())
+}
+
+model SiteSettings {
+  id           String   @id @default("singleton")
+  email        String?
+  phone        String?
+  whatsapp     String?
+  instagram    String?
+  facebook     String?
+  location     String?
+  heroProjects String? // e.g. "600+"
+  heroAwards   String? // e.g. "10"
+  heroYears    String? // e.g. "8yr"
+  updatedAt    DateTime @updatedAt
+}
+
+enum InquiryStatus {
+  NEW
+  READ
+  REPLIED
+}
+
+model Inquiry {
+  id        String        @id @default(uuid())
+  name      String
+  email     String
+  phone     String
+  service   String?
+  eventDate DateTime?
+  message   String
+  status    InquiryStatus @default(NEW)
+  createdAt DateTime      @default(now())
+
+  @@index([status, createdAt])
+}
